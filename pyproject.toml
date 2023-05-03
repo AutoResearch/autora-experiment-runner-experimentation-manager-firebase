@@ -1,9 +1,9 @@
 [project]
 # UPDATE THIS BEFORE PUBLISHING
-name = "autora-runner-experimentation-manager-firebase"
+name = "autora-experiment-runner-experimentation-manager-firebase"
 description = "AutoRA Experimentation Manager Firebase provides functionality to manage communication of conditions and observation between AutoRA and an experiment on Firebase."
 authors = [{ name = "Younes Strittmatter", email = "younes_strittmatter@brown.edu" }]
-version = "0.1.0"
+dynamic = ["version"]
 
 readme = "README.md"
 license = { text = "MIT License" }
@@ -22,9 +22,11 @@ dev = [
 
 [project.urls]
 homepage = "http://www.empiricalresearch.ai"
-repository = "https://github.com/AutoResearch/autora-theorist-template"
+repository = "https://github.com/AutoResearch/autora-experiment-runner-experimentation-manager-firebase"
 documentation = "https://autoresearch.github.io/autora/"
 
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools", "setuptools_scm"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
