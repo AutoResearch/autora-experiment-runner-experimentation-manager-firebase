@@ -39,8 +39,8 @@ def send_conditions(
         doc_meta: str = "autora_meta",
         doc_out: str = "autora_out",
         doc_in: str = "autora_in",
-        col_observation: str = "observation",
-        col_condition: str = "condition"
+        col_observation: str = "observations",
+        col_condition: str = "conditions"
 ):
     """
     Upload a condition to a firestore database
@@ -52,6 +52,8 @@ def send_conditions(
         doc_meta: document to store metadata
         doc_out: document to store out data
         doc_in: document to store in data
+        col_observation: collection to store the observations
+        col_condition: collection to store the conditions
     """
 
     # get the conditions with their indexes
@@ -96,13 +98,19 @@ def send_conditions(
         doc_ref_out.collection(col_observation).document(str(key)).set({str(key): None})
 
 
-def get_observations(collection_name: str, firebase_credentials: dict) -> Any:
+def get_observations(collection_name: str,
+                     firebase_credentials: dict,
+                     doc_out: str = "autora_out",
+                     col_observation: str = "observations", ) -> Any:
     """
     get observations from firestore database
 
     Args:
         collection_name: name of the collection as given in firebase
         firebase_credentials: credentials for firebase
+        doc_out: document to store out data
+        doc_out: document to store out data
+        col_observation: collection to store the observations
 
     Returns:
         observations
@@ -114,9 +122,9 @@ def get_observations(collection_name: str, firebase_credentials: dict) -> Any:
     db = firestore.client()
     seq_col = db.collection(f"{collection_name}")
 
-    doc_ref_out = seq_col.document("autora_out")
+    doc_ref_out = seq_col.document(doc_out)
 
-    col_ref = doc_ref_out.collection("observations")
+    col_ref = doc_ref_out.collection(col_observation)
     docs = col_ref.stream()
     observations = {}
     for doc in docs:
