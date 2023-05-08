@@ -1,7 +1,3 @@
-# Firebase Experimentation Manager
-
-Firebase Experimentation Manager provides functionality to manage communication of conditions and observation between AutoRA and an experiment on Firebase.
-
 # Quickstart Guide
 
 You will need:
@@ -12,7 +8,7 @@ You will need:
 Install the package via pip:
 
 ```shell
-pip install "aurora[experiment-runner-experimentation-manager-firebase]"
+pip install -U "aurora[experiment-runner-experimentation-manager-firebase]"
 ```
 
 ## Test

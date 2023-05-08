@@ -5,4 +5,8 @@ site_name: AutoRA Firebase Experimentation Manager
 repo_url: 'https://github.com/autoresearch/autora-experiment-runner-experimentation-manager-firebase'
 
 nav:
-- 'index.md'
+- Home: 'index.md'
+- Quickstart: 'quick-start.md'
+- Examples:
+    - Basic Usage: 'basic-usage.ipynb'
+    - SweetPea: 'sweetpea.ipynb'

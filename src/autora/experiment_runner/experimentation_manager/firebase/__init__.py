@@ -7,7 +7,7 @@ from firebase_admin import credentials, firestore
 
 def _sequence_to_db_object(iterable):
     """
-    Convert a array into a dictionary for a database
+    Convert an array into a dictionary for a database
     Args:
         iterable: an iterable
 
@@ -32,7 +32,16 @@ def _sequence_to_db_object(iterable):
     return {i: t for i, t in enumerate(iterable)}
 
 
-def send_conditions(collection_name: str, conditions: Any, firebase_credentials: str):
+def send_conditions(
+        collection_name: str,
+        conditions: Any,
+        firebase_credentials: str,
+        doc_meta: str = "autora_meta",
+        doc_out: str = "autora_out",
+        doc_in: str = "autora_in",
+        col_observation: str = "observation",
+        col_condition: str = "condition"
+):
     """
     Upload a condition to a firestore database
 
@@ -40,6 +49,9 @@ def send_conditions(collection_name: str, conditions: Any, firebase_credentials:
         collection_name: the name of the study as given in firebase
         conditions: the condition to run
         firebase_credentials: dict with the credentials for firebase
+        doc_meta: document to store metadata
+        doc_out: document to store out data
+        doc_in: document to store in data
     """
 
     # get the conditions with their indexes
@@ -54,9 +66,9 @@ def send_conditions(collection_name: str, conditions: Any, firebase_credentials:
     seq_col = db.collection(f"{collection_name}")
 
     # get the documents
-    doc_ref_meta = seq_col.document("autora_meta")
-    doc_ref_out = seq_col.document("autora_out")
-    doc_ref_in = seq_col.document("autora_in")
+    doc_ref_meta = seq_col.document(doc_meta)
+    doc_ref_out = seq_col.document(doc_out)
+    doc_ref_in = seq_col.document(doc_in)
 
     # set metadata
     # start_time and is_finished for each condition
@@ -67,21 +79,21 @@ def send_conditions(collection_name: str, conditions: Any, firebase_credentials:
     doc_ref_meta.set(meta_dict)
 
     # reset the data
-    col_ref = doc_ref_out.collection("observations")
+    col_ref = doc_ref_out.collection(col_observation)
     docs = col_ref.stream()
     for doc in docs:
         doc.reference.delete()
 
-    col_ref = doc_ref_in.collection("conditions")
+    col_ref = doc_ref_in.collection(col_condition)
     docs = col_ref.stream()
     for doc in docs:
         doc.reference.delete()
     # setup db for conditions and observations
     for key in condition_dict:
-        doc_ref_in.collection("conditions").document(str(key)).set(
+        doc_ref_in.collection(col_condition).document(str(key)).set(
             {str(key): condition_dict[key]}
         )
-        doc_ref_out.collection("observations").document(str(key)).set({str(key): None})
+        doc_ref_out.collection(col_observation).document(str(key)).set({str(key): None})
 
 
 def get_observations(collection_name: str, firebase_credentials: dict) -> Any:
@@ -113,7 +125,7 @@ def get_observations(collection_name: str, firebase_credentials: dict) -> Any:
 
 
 def check_firebase_status(
-    collection_name: str, firebase_credentials: dict, time_out: int
+        collection_name: str, firebase_credentials: dict, time_out: int
 ) -> str:
     """
     check the status of the condition
