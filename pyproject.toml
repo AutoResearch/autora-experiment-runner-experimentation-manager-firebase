@@ -12,7 +12,7 @@ requires-python = ">=3.8,<4"
 # ADD NEW DEPENDENCIES HERE
 dependencies = [
     "autora-core",
-    "firebase_admin",
+    "firebase-admin",
 ]
 
 [project.optional-dependencies]
