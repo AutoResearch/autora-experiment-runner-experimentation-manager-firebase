@@ -6,7 +6,6 @@ repo_url: 'https://github.com/autoresearch/autora-experiment-runner-experimentat
 
 nav:
 - Home: 'index.md'
-- Quickstart: 'quick-start.md'
+- Quickstart: 'quickstart.md'
 - Examples:
-    - Basic Usage: 'basic-usage.ipynb'
-    - SweetPea: 'sweetpea.ipynb'
+    - SweetPea: 'SweetPea.ipynb'
