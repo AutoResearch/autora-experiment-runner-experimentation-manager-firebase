@@ -35,7 +35,7 @@ def _sequence_to_db_object(iterable):
     is_float64 = False
     for t in iterable:
         is_int64 = is_int64 or isinstance(t, np.int64)
-        is_float64 = is_float64 or is_float64(t, np.float64)
+        is_float64 = is_float64 or isinstance(t, np.float64)
     if is_int64:
         warnings.warn('Converting np.int64 to int to store in Firestore, may loose precision')
     if is_float64:
