@@ -1,5 +1,7 @@
 import time
 from typing import Any
+import numpy as np
+import warnings
 
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -29,7 +31,16 @@ def _sequence_to_db_object(iterable):
     """
     if not hasattr(iterable, "__iter__"):
         return {0: iterable}
-    return {i: t for i, t in enumerate(iterable)}
+    is_int64 = False
+    is_float64 = False
+    for t in iterable:
+        is_int64 = is_int64 or isinstance(t, np.int64)
+        is_float64 = is_float64 or is_float64(t, np.float64)
+    if is_int64:
+        warnings.warn('Converting np.int64 to int to store in Firestore, may loose precision')
+    if is_float64:
+        warnings.warn('Converting np.float64 to float to store in Firestore, may loose precision')
+    return {i: int(t) if isinstance(t, np.integer) else float(t) if isinstance(t, np.floating) else t for i, t in enumerate(iterable)}
 
 
 def _get_collection(
