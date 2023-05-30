@@ -2,13 +2,12 @@ import time
 from typing import Any
 import numpy as np
 import warnings
-import json
 
 import firebase_admin
 from firebase_admin import credentials, firestore
+import json
 
-
-def _sequence_to_db_object(iterable):
+def _sequence_to_db_object(iterable, save=False):
     """
     Helper function to convert an array into a dictionary for a database
     Args:
@@ -36,12 +35,12 @@ def _sequence_to_db_object(iterable):
     is_float64 = False
     for t in iterable:
         is_int64 = is_int64 or isinstance(t, np.int64)
-        is_float64 = is_float64 or is_float64(t, np.float64)
+        is_float64 = is_float64 or isinstance(t, np.float64)
     if is_int64:
         warnings.warn('Converting np.int64 to int to store in Firestore, may loose precision')
     if is_float64:
         warnings.warn('Converting np.float64 to float to store in Firestore, may loose precision')
-    return {i: int(t) if isinstance(t, np.integer) else float(t) if isinstance(t, np.floating) else json.dumps(t) for i, t in enumerate(iterable)}
+    return {i: int(t) if isinstance(t, np.integer) else float(t) if isinstance(t, np.floating) else t if isinstance(t, dict) else json.dumps(t) for i, t in enumerate(iterable)}
 
 
 def _get_collection(
@@ -61,10 +60,10 @@ def _get_collection(
     # get the firebase collection (name of the study most probably)
     if not firebase_admin._apps:
         cred = credentials.Certificate(firebase_credentials)
-        firebase_admin.initialize_app(cred)
+        app = firebase_admin.initialize_app(cred)
     db = firestore.client()
 
-    return db.collection(f"{collection_name}")
+    return app, db.collection(f"{collection_name}")
 
 
 def _set_meta(
@@ -113,9 +112,10 @@ def set_meta(
         doc_meta: document to store metadata
         is_append: if true, append the conditions instead of resetting them
     """
-    seq_col = _get_collection(collection_name, firebase_credentials)
+    app, seq_col = _get_collection(collection_name, firebase_credentials)
     condition_dict = _sequence_to_db_object(condition)
     _set_meta(seq_col, condition_dict, doc_meta, is_append)
+    firebase_admin.delete_app(app)
 
 
 def __reset_col(
@@ -226,9 +226,10 @@ def set_up_experiment_db(
         col_condition: collection to store the conditions
         is_append: if true, append the conditions and observations instead of resetting them
     """
-    seq_col = _get_collection(collection_name, firebase_credentials)
+    app, seq_col = _get_collection(collection_name, firebase_credentials)
     condition_dict = _sequence_to_db_object(condition)
     _set_up_experiment_db(seq_col, condition_dict, doc_out, doc_in, col_observation, col_condition, is_append)
+    firebase_admin.delete_app(app)
 
 
 def send_conditions(
@@ -262,13 +263,15 @@ def send_conditions(
     condition_dict = _sequence_to_db_object(conditions)
 
     # get the firebase collection
-    seq_col = _get_collection(collection_name, firebase_credentials)
+    app, seq_col = _get_collection(collection_name, firebase_credentials)
 
     # set the meta data
     _set_meta(seq_col, condition_dict, doc_meta, is_append)
 
     # setup db for conditions and observations
     _set_up_experiment_db(seq_col, condition_dict, doc_out, doc_in, col_observation, col_condition, is_append)
+
+    firebase_admin.delete_app(app)
 
 
 def get_observations(collection_name: str,
@@ -291,7 +294,7 @@ def get_observations(collection_name: str,
 
     if not firebase_admin._apps:
         cred = credentials.Certificate(firebase_credentials)
-        firebase_admin.initialize_app(cred)
+        app = firebase_admin.initialize_app(cred)
     db = firestore.client()
     seq_col = db.collection(f"{collection_name}")
 
@@ -302,6 +305,7 @@ def get_observations(collection_name: str,
     observations = {}
     for doc in docs:
         observations.update(doc.reference.get().to_dict())
+    firebase_admin.delete_app(app)
     return observations
 
 
@@ -326,7 +330,7 @@ def check_firebase_status(
 
     if not firebase_admin._apps:
         cred = credentials.Certificate(firebase_credentials)
-        firebase_admin.initialize_app(cred)
+        app = firebase_admin.initialize_app(cred)
     db = firestore.client()
     seq_col = db.collection(f"{collection_name}")
 
@@ -337,6 +341,7 @@ def check_firebase_status(
     for key, value in meta_data.items():
         # return available if there are conditions that haven't been started
         if value["start_time"] is None:
+            firebase_admin.delete_app(app)
             return "available"
         else:
             if not value["finished"]:
@@ -345,12 +350,15 @@ def check_firebase_status(
                 # check weather the started condition has timed out, if so, reset start_time and
                 # return available
                 if time_from_started > time_out:
+                    firebase_admin.delete_app(app)
                     doc_ref_meta.update({key: {"start_time": None, "finished": False}})
                     return "available"
                 else:
                     finished = False
     if finished:
         # if all start_times are set and have data, condition is finished
+        firebase_admin.delete_app(app)
         return "finished"
     # if all start_times are set, but there is no data for all of them, pause the condition
+    firebase_admin.delete_app(app)
     return "unavailable"
