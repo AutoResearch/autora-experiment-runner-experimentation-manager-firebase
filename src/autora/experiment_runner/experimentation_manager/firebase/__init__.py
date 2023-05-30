@@ -2,6 +2,7 @@ import time
 from typing import Any
 import numpy as np
 import warnings
+import json
 
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -40,7 +41,7 @@ def _sequence_to_db_object(iterable):
         warnings.warn('Converting np.int64 to int to store in Firestore, may loose precision')
     if is_float64:
         warnings.warn('Converting np.float64 to float to store in Firestore, may loose precision')
-    return {i: int(t) if isinstance(t, np.integer) else float(t) if isinstance(t, np.floating) else t for i, t in enumerate(iterable)}
+    return {i: int(t) if isinstance(t, np.integer) else float(t) if isinstance(t, np.floating) else json.dumps(t) for i, t in enumerate(iterable)}
 
 
 def _get_collection(
