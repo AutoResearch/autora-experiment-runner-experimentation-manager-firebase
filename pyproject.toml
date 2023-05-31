@@ -1,7 +1,7 @@
 [project]
 # UPDATE THIS BEFORE PUBLISHING
 name = "autora-experiment-runner-experimentation-manager-firebase"
-description = "AutoRA Experimentation Manager Firebase provides functionality to manage communication of conditions and observation between AutoRA and an experiment on Firebase."
+description = "AutoRA Experimentation Manager Firebase provides functionality to manage communication of conditions and observations between AutoRA and an experiment on Firebase."
 authors = [{ name = "Younes Strittmatter", email = "younes_strittmatter@brown.edu" }]
 dynamic = ["version"]
 
