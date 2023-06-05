@@ -348,7 +348,6 @@ def check_firebase_status(
     for key, value in meta_data.items():
         # return available if there are conditions that haven't been started
         if value["start_time"] is None:
-            firebase_admin.delete_app(app)
             available = True
         else:
             if not value["finished"]:
@@ -357,12 +356,11 @@ def check_firebase_status(
                 # check weather the started condition has timed out, if so, reset start_time and
                 # set available True
                 if time_from_started > time_out:
-                    firebase_admin.delete_app(app)
                     doc_ref_meta.update({key: {"start_time": None, "finished": False}})
                     available = True
                 else:
                     finished = False
-    firebase_admin.delete_app()
+    firebase_admin.delete_app(app)
     if available:
         return 'available'
     if finished:
