@@ -344,27 +344,29 @@ def check_firebase_status(
     meta_data = doc_ref_meta.get().to_dict()
 
     finished = True
+    available = False
     for key, value in meta_data.items():
         # return available if there are conditions that haven't been started
         if value["start_time"] is None:
             firebase_admin.delete_app(app)
-            return "available"
+            available = True
         else:
             if not value["finished"]:
                 unix_time_seconds = int(time.time())
                 time_from_started = unix_time_seconds - value["start_time"]
                 # check weather the started condition has timed out, if so, reset start_time and
-                # return available
+                # set available True
                 if time_from_started > time_out:
                     firebase_admin.delete_app(app)
                     doc_ref_meta.update({key: {"start_time": None, "finished": False}})
-                    return "available"
+                    available = True
                 else:
                     finished = False
+    firebase_admin.delete_app()
+    if available:
+        return 'available'
     if finished:
         # if all start_times are set and have data, condition is finished
-        firebase_admin.delete_app(app)
         return "finished"
     # if all start_times are set, but there is no data for all of them, pause the condition
-    firebase_admin.delete_app(app)
     return "unavailable"
