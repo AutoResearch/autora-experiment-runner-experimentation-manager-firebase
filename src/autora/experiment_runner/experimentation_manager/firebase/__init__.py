@@ -61,6 +61,8 @@ def _get_collection(
     if not firebase_admin._apps:
         cred = credentials.Certificate(firebase_credentials)
         app = firebase_admin.initialize_app(cred)
+    else:
+        app = firebase_admin.get_app()
     db = firestore.client()
 
     return app, db.collection(f"{collection_name}")
@@ -295,6 +297,8 @@ def get_observations(collection_name: str,
     if not firebase_admin._apps:
         cred = credentials.Certificate(firebase_credentials)
         app = firebase_admin.initialize_app(cred)
+    else:
+        app = firebase_admin.get_app()
     db = firestore.client()
     seq_col = db.collection(f"{collection_name}")
 
@@ -331,6 +335,8 @@ def check_firebase_status(
     if not firebase_admin._apps:
         cred = credentials.Certificate(firebase_credentials)
         app = firebase_admin.initialize_app(cred)
+    else:
+        app = firebase_admin.get_app()
     db = firestore.client()
     seq_col = db.collection(f"{collection_name}")
 
