@@ -7,6 +7,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import json
 
+
 def _sequence_to_db_object(iterable, save=False):
     """
     Helper function to convert an array into a dictionary for a database
@@ -40,7 +41,9 @@ def _sequence_to_db_object(iterable, save=False):
         warnings.warn('Converting np.int64 to int to store in Firestore, may loose precision')
     if is_float64:
         warnings.warn('Converting np.float64 to float to store in Firestore, may loose precision')
-    return {i: int(t) if isinstance(t, np.integer) else float(t) if isinstance(t, np.floating) else t if isinstance(t, dict) else json.dumps(t) for i, t in enumerate(iterable)}
+    return {i: int(t) if isinstance(t, np.integer) else float(t) if isinstance(t, np.floating) else t if isinstance(t,
+                                                                                                                    dict) else json.dumps(
+        t) for i, t in enumerate(iterable)}
 
 
 def _get_collection(
@@ -314,7 +317,7 @@ def get_observations(collection_name: str,
 
 
 def check_firebase_status(
-        collection_name: str, firebase_credentials: dict, time_out: int
+        collection_name: str, firebase_credentials: dict, time_out: int, pids_aborted: list = []
 ) -> str:
     """
     check the status of the condition
@@ -324,6 +327,7 @@ def check_firebase_status(
         firebase_credentials: credentials for firebase
         time_out: time out for participants that started the condition
             but didn't finish (after this time spots are freed)
+        pids_aborted: a list of personal ids that aborted the experiment (free the places)
 
     Returns:
         Can have three different outcomes:
@@ -353,10 +357,13 @@ def check_firebase_status(
             if not value["finished"]:
                 unix_time_seconds = int(time.time())
                 time_from_started = unix_time_seconds - value["start_time"]
+                is_aborted = False
+                if "pId" in value:
+                    is_aborted = value['pId'] in pids_aborted
                 # check weather the started condition has timed out, if so, reset start_time and
                 # set available True
-                if time_from_started > time_out:
-                    doc_ref_meta.update({key: {"start_time": None, "finished": False}})
+                if time_from_started > time_out or is_aborted:
+                    doc_ref_meta.update({key: {"start_time": None, "finished": False, "pId": None}})
                     available = True
                 else:
                     finished = False
