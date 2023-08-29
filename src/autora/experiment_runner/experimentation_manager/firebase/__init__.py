@@ -351,7 +351,7 @@ def check_firebase_status(
     available = False
     for key, value in meta_data.items():
         # return available if there are conditions that haven't been started
-        if value["start_time"] is None:
+        if value["start_time"] is None and not value["finished"]:
             available = True
         else:
             if not value["finished"]:
