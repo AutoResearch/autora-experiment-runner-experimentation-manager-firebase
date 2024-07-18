@@ -124,6 +124,7 @@ def set_meta(
     """
     app, seq_col = _get_collection(collection_name, firebase_credentials)
     condition_dict = _sequence_to_db_object(condition)
+    seq_col.document(doc_meta).delete()
     _set_meta(seq_col, condition_dict, doc_meta, is_append)
     firebase_admin.delete_app(app)
 
