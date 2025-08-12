@@ -34,7 +34,7 @@ def _sequence_to_db_object(iterable, save=False):
     if not hasattr(iterable, "__iter__"):
         return {0: iterable}
     if isinstance(iterable, pd.DataFrame):
-        return iterable.to_dict(orient='index')
+        return iterable.reset_index(drop=True).to_dict(orient='index')
     is_int64 = False
     is_float64 = False
     for t in iterable:
