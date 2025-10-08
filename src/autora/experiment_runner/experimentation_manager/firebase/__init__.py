@@ -368,7 +368,7 @@ def check_firebase_status(
                 is_aborted = False
                 if "pId" in value:
                     is_aborted = value['pId'] in pids_aborted
-                if is_aborted:
+                if is_aborted or (time_out is not None and time_from_started > time_out):
                     doc_ref_meta.update({key: {"start_time": None, "finished": False, "pId": None}})
                     available = True
                 else:
