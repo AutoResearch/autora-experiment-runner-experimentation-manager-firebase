@@ -326,7 +326,7 @@ def get_observations(collection_name: str,
 
 def check_firebase_status(
         collection_name: str, firebase_credentials: dict, time_out: Optional[int] = None,
-        pids_aborted: list = []
+        pids_aborted: Optional[list] = None
 ) -> str:
     """
     check the status of the condition
@@ -344,6 +344,10 @@ def check_firebase_status(
             (2) finished -> collection of observations is finished
             (3) unavailable -> all conditions are running, recruitment should be paused
     """
+    if pids_aborted is None:
+        pids_aborted = []
+    pids_aborted_set = set(pids_aborted)
+
     if not firebase_admin._apps:
         cred = credentials.Certificate(firebase_credentials)
         app = firebase_admin.initialize_app(cred)
@@ -365,10 +369,14 @@ def check_firebase_status(
             if not value["finished"]:
                 unix_time_seconds = int(time.time())
                 time_from_started = unix_time_seconds - value["start_time"]
-                is_aborted = False
-                if "pId" in value:
-                    is_aborted = value['pId'] in pids_aborted
-                if is_aborted:
+                pid = value.get("pId")
+                is_aborted = pid in pids_aborted_set if pid is not None else False
+                is_timed_out = (
+                    time_out is not None
+                    and value["start_time"] is not None
+                    and time_from_started > time_out
+                )
+                if is_aborted or is_timed_out:
                     doc_ref_meta.update({key: {"start_time": None, "finished": False, "pId": None}})
                     available = True
                 else:
