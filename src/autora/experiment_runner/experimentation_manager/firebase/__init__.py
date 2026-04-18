@@ -357,11 +357,16 @@ def check_firebase_status(
     seq_col = db.collection(f"{collection_name}")
 
     doc_ref_meta = seq_col.document("autora_meta")
-    meta_data = doc_ref_meta.get().to_dict()
+    meta_data = doc_ref_meta.get().to_dict() or {}
 
     finished = True
     available = False
     for key, value in meta_data.items():
+        # Ignore non-slot fields (e.g. legacy top-level keys) so we don't KeyError.
+        if not isinstance(value, dict):
+            continue
+        if "start_time" not in value or "finished" not in value:
+            continue
         # return available if there are conditions that haven't been started
         if value["start_time"] is None and not value["finished"]:
             available = True
@@ -377,7 +382,16 @@ def check_firebase_status(
                     and time_from_started > time_out
                 )
                 if is_aborted or is_timed_out:
-                    doc_ref_meta.update({key: {"start_time": None, "finished": False, "pId": None}})
+                    # Use dotted field paths so Firestore *merges* into the existing map.
+                    # Replacing the whole map (update({key: {...}})) wipes client-only keys
+                    # such as metadata flags used by the hosted experiment app.
+                    doc_ref_meta.update(
+                        {
+                            f"{key}.start_time": None,
+                            f"{key}.finished": False,
+                            f"{key}.pId": None,
+                        }
+                    )
                     available = True
                 else:
                     finished = False
