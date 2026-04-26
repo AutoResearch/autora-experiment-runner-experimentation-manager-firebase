@@ -324,6 +324,75 @@ def get_observations(collection_name: str,
     return observations
 
 
+def get_observations_with_meta(
+        collection_name: str,
+        firebase_credentials: dict,
+        doc_out: str = "autora_out",
+        col_observation: str = "observations",
+        doc_meta: str = "autora_meta",
+) -> dict:
+    """Fetch observations and join the per-slot meta record (e.g. Prolific id).
+
+    The website-side ``getCondition`` claim writes a ``pId`` (and other
+    per-slot bookkeeping) into the ``autora_meta`` document for the slot it
+    just claimed. Plain ``get_observations`` only returns the observation
+    payloads written by ``setObservation`` and drops the meta on the floor,
+    which makes it impossible for downstream code to e.g. pay every
+    Prolific recruit by id.
+
+    This helper does the same observations read as ``get_observations``
+    plus a single extra read of the meta document, then outer-joins the
+    two by slot key.
+
+    Returns a dict keyed by slot key. Each value is::
+
+        {
+            "obs":        <observation payload from setObservation>,
+            "pId":        <Prolific participant id, or None>,
+            "start_time": <epoch seconds the slot was claimed>,
+            "finished":   <bool>,
+        }
+
+    Slots present in observations but missing from meta are still
+    returned (with ``pId=None``), so completed participants are never
+    silently dropped.
+    """
+    if not firebase_admin._apps:
+        cred = credentials.Certificate(firebase_credentials)
+        app = firebase_admin.initialize_app(cred)
+    else:
+        app = firebase_admin.get_app()
+    db = firestore.client()
+    seq_col = db.collection(f"{collection_name}")
+
+    # 1. observations (mirrors `get_observations`).
+    doc_ref_out = seq_col.document(doc_out)
+    col_ref = doc_ref_out.collection(col_observation)
+    observations: dict = {}
+    for doc in col_ref.stream():
+        observations.update(doc.reference.get().to_dict())
+
+    # 2. meta document — single read.
+    meta_doc = seq_col.document(doc_meta).get()
+    meta = meta_doc.to_dict() if meta_doc.exists else {}
+
+    firebase_admin.delete_app(app)
+
+    # 3. join.
+    out: dict = {}
+    for slot_key, obs in observations.items():
+        slot_meta = meta.get(slot_key, {}) if isinstance(meta, dict) else {}
+        if not isinstance(slot_meta, dict):
+            slot_meta = {}
+        out[slot_key] = {
+            "obs": obs,
+            "pId": slot_meta.get("pId"),
+            "start_time": slot_meta.get("start_time"),
+            "finished": slot_meta.get("finished", True),
+        }
+    return out
+
+
 def check_firebase_status(
         collection_name: str, firebase_credentials: dict, time_out: Optional[int] = None,
         pids_aborted: Optional[list] = None
